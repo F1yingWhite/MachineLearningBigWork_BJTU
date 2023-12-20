@@ -2,8 +2,9 @@ import pandas as pd
 import numpy as np
 from models.svm import SVMMethods
 from sklearn.preprocessing import StandardScaler
-from models.cart import CARTTree
+from models.cart import CartTree
 import csv
+from models.RandomForest import RandomForest
 
 
 def outlierHandler(data, quantile=0.99):
@@ -93,7 +94,7 @@ def loadData(mode="number"):
         data = scaler.fit_transform(data)
     return (
         data[:trainLen],
-        label,
+        np.array(label),
         data[trainLen:],
         dfTest["PassengerId"],
     )
@@ -112,7 +113,7 @@ def to_csv(predict, index, path):
 
 if __name__ == "__main__":
     train, label, test, index = loadData(mode="discrete")
-    cart = CARTTree()
-    cart.fit(train, label)
-    result = cart.predict(test)
-    to_csv(result, index, "result_cart.csv")
+    tree = RandomForest()
+    tree.fit(train, label)
+    result = tree.predict(test)
+    to_csv(result,index,"result_rf.csv")

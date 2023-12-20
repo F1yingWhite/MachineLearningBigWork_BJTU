@@ -12,6 +12,7 @@ class Node:
         self.target = None
         self.leftNode = None
         self.rightNode = None
+        self.numOfLeaf = 0
 
     def predict(self, data):
         if self.leftNode == self.rightNode == None:
@@ -29,11 +30,12 @@ class Node:
                 return self.rightNode.predict(data)
 
     def oneNodeCart(self, threshold=0.05):
+        # 叶节点
         if np.sum(self.label) == len(self.label) or np.sum(self.label) == 0:
             count_true = np.sum(self.label)
             count_false = len(self.label) - count_true
             self.target = True if count_true > count_false else False
-            return 0
+            return 1
         shape = self.data.shape
         print(self.data.shape)
         minGini = 1e9
@@ -66,24 +68,29 @@ class Node:
             self.dimension = dimension
             self.mem = mem
             # 递归下去
-            self.leftNode.oneNodeCart(threshold=threshold)
-            self.rightNode.oneNodeCart(threshold=threshold)
-            return 1
+            numOfLeftLeaf = self.leftNode.oneNodeCart(threshold=threshold)
+            numOfRightLeaf = self.rightNode.oneNodeCart(threshold=threshold)
+            self.numOfLeaf = numOfLeftLeaf + numOfRightLeaf
+            return self.numOfLeaf
         # 不需要再分类,停止操作
         count_true = np.sum(self.label)
         count_false = len(self.label) - count_true
         self.target = True if count_true > count_false else False
-        return 0
+        return 1
+
+    def pruning(self):
+        # TODO:没有硬性要求
+        ...
 
 
-class CARTTree:
+class CartTree:
     def __init__(self):
         self.root = Node()
 
-    def fit(self, data, label):
+    def fit(self, data, label, threshold=0.05):
         self.root.data = data
         self.root.label = label
-        self.root.oneNodeCart()
+        self.root.oneNodeCart(threshold)
 
     def predict(self, data):
         result = []
