@@ -1,8 +1,9 @@
 import pandas as pd
 import numpy as np
 from models.svm import SVMMethods
-import matplotlib.pyplot as plt
 from sklearn.preprocessing import StandardScaler
+from models.cart import CARTTree
+import csv
 
 
 def outlierHandler(data, quantile=0.99):
@@ -12,7 +13,7 @@ def outlierHandler(data, quantile=0.99):
 
 
 # 在这里加载数据与进行数据预处理,包括数据标准化以及缺失值补全
-def loadData():
+def loadData(mode="number"):
     path = "./spaceship-titanic/train.csv"
     df = pd.read_csv(path)
     label = df["Transported"].replace(False, 0).replace(True, 1)
@@ -33,35 +34,23 @@ def loadData():
     # ]  # 获得每个乘客所属的团队,可以统计团队人数,不过好像没用,因为有人在Test数据集中!
 
     # 离开的星球,改为整数型
-    HomePlanet, _ = (
-        df["HomePlanet"]
-        .fillna(df["HomePlanet"].value_counts().idxmax())
-        .factorize()  # 热编码
-    )
+    HomePlanet = df["HomePlanet"].fillna(df["HomePlanet"].value_counts().idxmax())
 
     # 是否在休眠
-    CryoSleep, _ = (
-        df["CryoSleep"].fillna(df["CryoSleep"].value_counts().idxmax()).factorize()
-    )
+    CryoSleep = df["CryoSleep"].fillna(df["CryoSleep"].value_counts().idxmax())
     # 仓位号,采用deck/num/side 的形式
     Cabin = df["Cabin"]
     df[["CabinDeck", "CabinNo", "CabinSide"]] = Cabin.str.split("/", expand=True)
-    CabinDeck, _ = (
-        df["CabinDeck"].fillna(df["CabinDeck"].value_counts().idxmax()).factorize()
-    )
-    CabinSide, _ = (
-        df["CabinSide"].fillna(df["CabinSide"].value_counts().idxmax()).factorize()
-    )
+    CabinDeck = df["CabinDeck"].fillna(df["CabinDeck"].value_counts().idxmax())
+    CabinSide = df["CabinSide"].fillna(df["CabinSide"].value_counts().idxmax())
 
     # 目的地
-    Destination, _ = (
-        df["Destination"].fillna(df["Destination"].value_counts().idxmax()).factorize()
-    )
+    Destination = df["Destination"].fillna(df["Destination"].value_counts().idxmax())
 
     # 年龄
     Age = df["Age"].fillna(df["Age"].mean())
     # 是否是VIP
-    VIP, _ = df["VIP"].fillna(df["VIP"].value_counts().idxmax()).factorize()
+    VIP = df["VIP"].fillna(df["VIP"].value_counts().idxmax())
     # 开支,反正没啥用,不如用了再说
     RoomService = outlierHandler(df["RoomService"].fillna(df["RoomService"].mean()))
     FoodCourt = outlierHandler(df["FoodCourt"].fillna(df["FoodCourt"].mean()))
@@ -72,6 +61,14 @@ def loadData():
     NormalExpendtion = FoodCourt + ShoppingMall
     LuxuryExpendtion = Spa + VRDeck + RoomService
     TotalExpendtion = RoomService + FoodCourt + ShoppingMall + Spa + VRDeck
+    if mode == "number":
+        HomePlanet, _ = HomePlanet.factorize()
+        CryoSleep, _ = CryoSleep.factorize()
+        CabinDeck, _ = CabinDeck.factorize()
+        CabinSide, _ = CabinSide.factorize()
+        Destination, _ = Destination.factorize()
+        VIP, _ = VIP.factorize()
+
     data = np.vstack(
         (
             HomePlanet,
@@ -91,15 +88,31 @@ def loadData():
             TotalExpendtion,
         )
     ).T
-    print(data.shape)
-    scaler = StandardScaler()
-    normalized_data = scaler.fit_transform(data)
-    return normalized_data[:trainLen], label, normalized_data[trainLen:], dfTest["PassengerId"]
+    if mode == "number":
+        scaler = StandardScaler()
+        data = scaler.fit_transform(data)
+    return (
+        data[:trainLen],
+        label,
+        data[trainLen:],
+        dfTest["PassengerId"],
+    )
+
+
+def to_csv(predict, index, path):
+    result = [["PassengerId", "Transported"]]
+    for i in range(len(index)):
+        data = [index[i], "True" if predict[i] else "False"]
+        result.append(data)
+
+    with open(path, "w", newline="") as file:
+        writer = csv.writer(file)
+        writer.writerows(result)
 
 
 if __name__ == "__main__":
-    train, label, test, index = loadData()
-    print(train.shape, label.shape, test.shape, index.shape)
-    print(train.shape)
-    print(label.shape)
-    SVMMethods(train, label, test, index)
+    train, label, test, index = loadData(mode="discrete")
+    cart = CARTTree()
+    cart.fit(train, label)
+    result = cart.predict(test)
+    to_csv(result, index, "result_cart.csv")
