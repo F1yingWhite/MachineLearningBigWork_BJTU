@@ -12,7 +12,6 @@ class Node:
         self.target = None
         self.leftNode = None
         self.rightNode = None
-        self.numOfLeaf = 0
 
     def predict(self, data):
         if self.leftNode == self.rightNode == None:

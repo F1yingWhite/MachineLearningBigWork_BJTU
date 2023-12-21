@@ -7,6 +7,7 @@ import csv
 from models.RandomForest import RandomForest
 from models.myel import Myel
 from models.AdaBoost import AdaBoost
+from collections import Counter
 
 
 def outlierHandler(data, quantile=0.99):
@@ -31,11 +32,12 @@ def loadData(mode="number"):
     ] = 0
 
     # 乘客ID
-    # PassengerId = df["PassengerId"]  # 无空值,不过暂时不用
-    # PassengerId = [
-    #     int(s[:4]) for s in PassengerId
-    # ]  # 获得每个乘客所属的团队,可以统计团队人数,不过好像没用,因为有人在Test数据集中!
-
+    OriginalPassengerId = df["PassengerId"]  # 无空值,不过暂时不用
+    PassengerId = [(s[:4]) for s in OriginalPassengerId]
+    counter = Counter(PassengerId)
+    OriginalPassengerId = OriginalPassengerId.factorize()
+    sorted_counter = dict(sorted(counter.items()))
+    PassengerId = [sorted_counter[s] for s in PassengerId]
     # 离开的星球,改为整数型
     HomePlanet = df["HomePlanet"].fillna(df["HomePlanet"].value_counts().idxmax())
 
@@ -46,6 +48,7 @@ def loadData(mode="number"):
     df[["CabinDeck", "CabinNo", "CabinSide"]] = Cabin.str.split("/", expand=True)
     CabinDeck = df["CabinDeck"].fillna(df["CabinDeck"].value_counts().idxmax())
     CabinSide = df["CabinSide"].fillna(df["CabinSide"].value_counts().idxmax())
+    CabinNo = df["CabinNo"].fillna(df["CabinNo"].value_counts().idxmax())
 
     # 目的地
     Destination = df["Destination"].fillna(df["Destination"].value_counts().idxmax())
@@ -74,9 +77,12 @@ def loadData(mode="number"):
 
     data = np.vstack(
         (
+            OriginalPassengerId,
+            PassengerId,
             HomePlanet,
             CryoSleep,
             CabinDeck,
+            CabinNo,
             CabinSide,
             Destination,
             Age,
@@ -86,9 +92,9 @@ def loadData(mode="number"):
             ShoppingMall,
             Spa,
             VRDeck,
-            NormalExpendtion,
-            LuxuryExpendtion,
-            TotalExpendtion,
+            # NormalExpendtion,
+            # LuxuryExpendtion,
+            # TotalExpendtion,
         )
     ).T
     if mode == "number":
@@ -114,8 +120,13 @@ def to_csv(predict, index, path):
 
 
 if __name__ == "__main__":
-    train, label, test, index = loadData(mode="oo")
-    tree = AdaBoost(3)
-    tree.fit(train, label)
-    result = tree.predict(test)
-    to_csv(result, index, "result_ada.csv")
+    # train, label, test, index = loadData(mode="number")
+    # SVMMethods(train, label, test, index)
+    train, label, test, index = loadData(mode="00")
+    tree = CartTree()
+    tree.fit(train, label, threshold=0.1)
+    to_csv(tree.predict(test), index, "result_cart.csv")
+    # tree = AdaBoost(10)
+    # tree.fit(train, label, threshold=0.15)
+    # result = tree.predict(test)
+    # to_csv(result, index, "result_ada.csv")
