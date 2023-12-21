@@ -5,7 +5,7 @@ import csv
 
 
 def SVMMethods(train, label, test, index):
-    clf = svm.SVC(C=0.5)
+    clf = svm.SVC()
     clf.fit(train, label)
     predict = clf.predict(test)
     result = [["PassengerId", "Transported"]]

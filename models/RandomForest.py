@@ -10,7 +10,7 @@ class RandomForest:
         for i in range(num):
             self.trees.append(CartTree())
 
-    def fit(self, data, label, choice=0.8):
+    def fit(self, data, label, choice=1.2, threshold=0.05):
         n = int(round(math.log(data.shape[1], 2)))
         new_col = label[:, np.newaxis]
         # 使用 np.concatenate 将数组拼接成一个新的二维数组
@@ -23,7 +23,7 @@ class RandomForest:
             cols = np.random.choice(data.shape[1], size=n, replace=False)
             selected_cols = data[:, cols]
             self.featureIndex.append(cols)
-            self.trees[i].fit(selected_cols, label)
+            self.trees[i].fit(selected_cols, label, threshold=threshold)
             print("一颗完成啦!")
 
     def predict(self, data):

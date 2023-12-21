@@ -5,6 +5,8 @@ from sklearn.preprocessing import StandardScaler
 from models.cart import CartTree
 import csv
 from models.RandomForest import RandomForest
+from models.myel import Myel
+from models.AdaBoost import AdaBoost
 
 
 def outlierHandler(data, quantile=0.99):
@@ -40,7 +42,7 @@ def loadData(mode="number"):
     # 是否在休眠
     CryoSleep = df["CryoSleep"].fillna(df["CryoSleep"].value_counts().idxmax())
     # 仓位号,采用deck/num/side 的形式
-    Cabin = df["Cabin"]
+    Cabin = df["Cabin"]  # .fillna(df["Cabin"].value_counts().idxmax())
     df[["CabinDeck", "CabinNo", "CabinSide"]] = Cabin.str.split("/", expand=True)
     CabinDeck = df["CabinDeck"].fillna(df["CabinDeck"].value_counts().idxmax())
     CabinSide = df["CabinSide"].fillna(df["CabinSide"].value_counts().idxmax())
@@ -53,11 +55,11 @@ def loadData(mode="number"):
     # 是否是VIP
     VIP = df["VIP"].fillna(df["VIP"].value_counts().idxmax())
     # 开支,反正没啥用,不如用了再说
-    RoomService = outlierHandler(df["RoomService"].fillna(df["RoomService"].mean()))
-    FoodCourt = outlierHandler(df["FoodCourt"].fillna(df["FoodCourt"].mean()))
-    ShoppingMall = outlierHandler(df["ShoppingMall"].fillna(df["ShoppingMall"].mean()))
-    Spa = outlierHandler(df["Spa"].fillna(df["Spa"].mean()))
-    VRDeck = outlierHandler(df["VRDeck"].fillna(df["VRDeck"].mean()))
+    RoomService = df["RoomService"].fillna(df["RoomService"].mean())
+    FoodCourt = df["FoodCourt"].fillna(df["FoodCourt"].mean())
+    ShoppingMall = df["ShoppingMall"].fillna(df["ShoppingMall"].mean())
+    Spa = df["Spa"].fillna(df["Spa"].mean())
+    VRDeck = df["VRDeck"].fillna(df["VRDeck"].mean())
     # 新的3列
     NormalExpendtion = FoodCourt + ShoppingMall
     LuxuryExpendtion = Spa + VRDeck + RoomService
@@ -112,8 +114,8 @@ def to_csv(predict, index, path):
 
 
 if __name__ == "__main__":
-    train, label, test, index = loadData(mode="discrete")
-    tree = RandomForest()
+    train, label, test, index = loadData(mode="oo")
+    tree = AdaBoost(3)
     tree.fit(train, label)
     result = tree.predict(test)
-    to_csv(result,index,"result_rf.csv")
+    to_csv(result, index, "result_ada.csv")
