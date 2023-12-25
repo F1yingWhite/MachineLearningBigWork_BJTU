@@ -10,8 +10,8 @@ from models.AdaBoost import AdaBoost
 from collections import Counter
 
 
-def outlierHandler(data, quantile=0.99):
-    p99 = np.percentile(data, 99)
+def outlierHandler(data, quantile=99):
+    p99 = np.percentile(data, quantile)
     data = np.where(data > p99, p99, data)
     return data
 
@@ -37,7 +37,7 @@ def loadData(mode="number"):
     counter = Counter(PassengerId)
     OriginalPassengerId = OriginalPassengerId.factorize()
     sorted_counter = dict(sorted(counter.items()))
-    PassengerId = [sorted_counter[s] for s in PassengerId]
+    GroupNum = [sorted_counter[s] for s in PassengerId]
     # 离开的星球,改为整数型
     HomePlanet = df["HomePlanet"].fillna(df["HomePlanet"].value_counts().idxmax())
 
@@ -49,10 +49,8 @@ def loadData(mode="number"):
     CabinDeck = df["CabinDeck"].fillna(df["CabinDeck"].value_counts().idxmax())
     CabinSide = df["CabinSide"].fillna(df["CabinSide"].value_counts().idxmax())
     CabinNo = df["CabinNo"].fillna(df["CabinNo"].value_counts().idxmax())
-
     # 目的地
     Destination = df["Destination"].fillna(df["Destination"].value_counts().idxmax())
-
     # 年龄
     Age = df["Age"].fillna(df["Age"].mean())
     # 是否是VIP
@@ -77,12 +75,12 @@ def loadData(mode="number"):
 
     data = np.vstack(
         (
-            OriginalPassengerId,
-            PassengerId,
+            # OriginalPassengerId,
+            GroupNum,
             HomePlanet,
             CryoSleep,
             CabinDeck,
-            CabinNo,
+            # CabinNo,
             CabinSide,
             Destination,
             Age,
@@ -122,11 +120,23 @@ def to_csv(predict, index, path):
 if __name__ == "__main__":
     # train, label, test, index = loadData(mode="number")
     # SVMMethods(train, label, test, index)
-    train, label, test, index = loadData(mode="00")
-    tree = CartTree()
-    tree.fit(train, label, threshold=0.1)
-    to_csv(tree.predict(test), index, "result_cart.csv")
+
+    # train, label, test, index = loadData(mode="00")
+    # tree = CartTree()
+    # tree.fit(train, label, threshold=0.3)
+    # to_csv(tree.predict(test), index, "result_cart.csv")
+
+    # train, label, test, index = loadData(mode="00")
+    # tree = RandomForest(num=23)
+    # tree.fit(train, label, threshold=0.16)
+    # to_csv(tree.predict(test), index, "result_rf.csv")
+
+    # train, label, test, index = loadData(mode="00")
     # tree = AdaBoost(10)
     # tree.fit(train, label, threshold=0.15)
     # result = tree.predict(test)
     # to_csv(result, index, "result_ada.csv")
+
+    train, label, test, index = loadData(mode="number")
+    predict = Myel(train, label, test)
+    to_csv(predict, index, "result_myel.csv")

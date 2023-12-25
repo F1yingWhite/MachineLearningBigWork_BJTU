@@ -2,6 +2,7 @@ import numpy as np
 from models.cart import CartTree
 import math
 import random
+import bisect
 
 
 def random_sampling(probabilities, data, label):
@@ -9,11 +10,10 @@ def random_sampling(probabilities, data, label):
     samples = []
     n = len(data)
     for _ in range(n):
-        r = random.random()
-        for i, prob in enumerate(cum_probabilities):
-            if r <= prob:
-                samples.append(i)
-                break
+        r = random.random() * cum_probabilities[-1]
+        # 二分查找概率分布数组中第一个大于 r 的位置
+        idx = bisect.bisect_left(cum_probabilities, r)
+        samples.append(idx)
     return data[samples], label[samples]
 
 
@@ -28,7 +28,7 @@ class AdaBoost:
         # 权重
         return 0.5 * math.log((1 - error) / error)
 
-    def fit(self, data, label, threshold=0.1):
+    def fit(self, data, label, threshold=0.05):
         weight = np.full(len(data), 1 / len(data), dtype=float)
         for i in range(len(self.trees)):
             # ? 如何训练一个带权重的基学习器,重采样么
@@ -64,5 +64,5 @@ class AdaBoost:
             result[i] = self.trees[i].predict(data)
         weighted_array = result * np.array(self.alphas)[:, np.newaxis]
         # 每列相加
-        result = weighted_array.sum(axis=0)/np.sum(np.array(self.alphas))
+        result = weighted_array.sum(axis=0) / np.sum(np.array(self.alphas))
         return result > 0.5

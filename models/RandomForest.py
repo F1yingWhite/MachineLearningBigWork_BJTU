@@ -10,16 +10,16 @@ class RandomForest:
         for i in range(num):
             self.trees.append(CartTree())
 
-    def fit(self, data, label, choice=1.2, threshold=0.05):
+    def fit(self, data, label, choice=0.8, threshold=0.05):
         n = int(round(math.log(data.shape[1], 2)))
         new_col = label[:, np.newaxis]
         # 使用 np.concatenate 将数组拼接成一个新的二维数组
-        data = np.concatenate((data, new_col), axis=1)
-        random_indices = np.random.choice(data.shape[0], int(len(data) * choice))
-        data = data[random_indices]
-        label = data[:, -1]
-        data = data[:, :-1]
+        new_data = np.concatenate((data, new_col), axis=1)
         for i in range(len(self.trees)):
+            random_indices = np.random.choice(new_data.shape[0], int(len(new_data) * choice))
+            data = new_data[random_indices]
+            label = data[:, -1]
+            data = data[:, :-1]
             cols = np.random.choice(data.shape[1], size=n, replace=False)
             selected_cols = data[:, cols]
             self.featureIndex.append(cols)
