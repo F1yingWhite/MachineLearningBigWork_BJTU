@@ -12,6 +12,7 @@ class Node:
         self.target = None
         self.leftNode = None
         self.rightNode = None
+        self.weight = None
 
     def predict(self, data):
         if self.leftNode == self.rightNode == None:
@@ -29,7 +30,7 @@ class Node:
                 return self.rightNode.predict(data)
 
     def oneNodeCart(self, threshold=0.05):
-        # 叶节点
+        # 叶节点是纯的
         if np.sum(self.label) == len(self.label) or np.sum(self.label) == 0:
             count_true = np.sum(self.label)
             count_false = len(self.label) - count_true
@@ -41,7 +42,9 @@ class Node:
         dimension = -1
         mem = -1
         for i in range(shape[1]):
-            target_men, Gini = minimumOfOneAtttributeGini(self.data[:, i], self.label)
+            target_men, Gini = minimumOfOneAtttributeGini(
+                self.data[:, i], self.label, self.weight
+            )
             if Gini < minGini:
                 minGini = Gini
                 dimension = i
@@ -55,13 +58,19 @@ class Node:
             ):
                 leftNode.data = self.data[self.data[:, dimension] == mem]
                 leftNode.label = self.label[self.data[:, dimension] == mem]
+                leftNode.weight = self.weight[self.data[:, dimension] == mem]
+
                 rightNode.data = self.data[self.data[:, dimension] != mem]
                 rightNode.label = self.label[self.data[:, dimension] != mem]
+                rightNode.weight = self.weight[self.data[:, dimension] != mem]
             else:
                 leftNode.data = self.data[self.data[:, dimension] <= mem]
                 leftNode.label = self.label[self.data[:, dimension] <= mem]
+                leftNode.weight = self.weight[self.data[:, dimension] <= mem]
+
                 rightNode.data = self.data[self.data[:, dimension] > mem]
                 rightNode.label = self.label[self.data[:, dimension] > mem]
+                rightNode.weight = self.weight[self.data[:, dimension] > mem]
             self.leftNode = leftNode
             self.rightNode = rightNode
             self.dimension = dimension
@@ -72,9 +81,9 @@ class Node:
             self.numOfLeaf = numOfLeftLeaf + numOfRightLeaf
             return self.numOfLeaf
         # 不需要再分类,停止操作
-        count_true = np.sum(self.label)
-        count_false = len(self.label) - count_true
-        self.target = True if count_true > count_false else False
+        sum_zero = np.sum(self.weight[self.label == 0])
+        sum_one = np.sum(self.weight[self.label == 1])
+        self.target = True if sum_one > sum_zero else False
         return 1
 
     def pruning(self):
@@ -86,9 +95,13 @@ class CartTree:
     def __init__(self):
         self.root = Node()
 
-    def fit(self, data, label, threshold=0.05):
+    def fit(self, data, label, weight=None, threshold=0.05):
         self.root.data = data
         self.root.label = label
+        if weight is None:
+            self.root.weight = np.ones(len(data)) / len(data)
+        else:
+            self.root.weight = weight
         self.root.oneNodeCart(threshold)
 
     def predict(self, data):
@@ -98,14 +111,19 @@ class CartTree:
         return result
 
 
-def Gini(data, label):
+def Gini(label):
     #! 这种写法仅支持2分类
     p0 = np.count_nonzero(label == 0) / len(label)
     return 2 * p0 * (1 - p0)
 
 
+def weighted_gini(label, weight):
+    p0 = np.sum(weight[label == 0]) / np.sum(weight)
+    return 2 * p0 * (1 - p0)
+
+
 # 一个类的基尼指数
-def minimumOfOneAtttributeGini(data, label):
+def minimumOfOneAtttributeGini(data, label, weight):
     """
     首先获取每个列的所有取值,排序后进行遍历,连续值取(a+b)/2,非连续值就取自己
     如果列已经只有单个元素就不再分了
@@ -127,12 +145,15 @@ def minimumOfOneAtttributeGini(data, label):
             preMean = mean
             dataLeft = data[data <= mean]
             labelLeft = label[data <= mean]
+            weightLeft = weight[data <= mean]
 
             dataRight = data[data > mean]
             labelRight = label[data > mean]
+            weightRight = weight[data > mean]
+
             gini = (
-                len(dataLeft) * Gini(dataLeft, labelLeft)
-                + len(dataRight) * Gini(dataRight, labelRight)
+                len(dataLeft) * weighted_gini(labelLeft, weightLeft)
+                + len(dataRight) * weighted_gini(labelRight, weightRight)
             ) / len(data)
             if minGini > gini:
                 minGini = gini
@@ -142,12 +163,15 @@ def minimumOfOneAtttributeGini(data, label):
         for i in unique_arr:
             dataLeft = data[data == i]
             labelLeft = label[data == i]
+            weightLeft = weight[data == i]
 
             dataRight = data[data != i]
             labelRight = label[data != i]
+            weightRight = weight[data != i]
+
             gini = (
-                len(dataLeft) * Gini(dataLeft, labelLeft)
-                + len(dataRight) * Gini(dataRight, labelRight)
+                len(dataLeft) * weighted_gini(labelLeft, weightLeft)
+                + len(dataRight) * weighted_gini(labelRight, weightRight)
             ) / len(data)
             if minGini > gini:
                 minGini = gini

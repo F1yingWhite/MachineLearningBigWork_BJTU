@@ -5,7 +5,7 @@ from sklearn.preprocessing import StandardScaler
 from models.cart import CartTree
 import csv
 from models.RandomForest import RandomForest
-from models.myel import Myel
+from models.myel import Myel, GBC
 from models.AdaBoost import AdaBoost
 from collections import Counter
 
@@ -90,9 +90,9 @@ def loadData(mode="number"):
             ShoppingMall,
             Spa,
             VRDeck,
-            # NormalExpendtion,
-            # LuxuryExpendtion,
-            # TotalExpendtion,
+            NormalExpendtion,
+            LuxuryExpendtion,
+            TotalExpendtion,
         )
     ).T
     if mode == "number":
@@ -133,10 +133,15 @@ if __name__ == "__main__":
 
     # train, label, test, index = loadData(mode="00")
     # tree = AdaBoost(10)
-    # tree.fit(train, label, threshold=0.15)
+    # tree.fit(train, label, threshold=0.2)
     # result = tree.predict(test)
     # to_csv(result, index, "result_ada.csv")
 
+    # train, label, test, index = loadData(mode="number")
+    # predict = Myel(train, label, test)
+    # to_csv(predict, index, "result_myel.csv")
+
     train, label, test, index = loadData(mode="number")
-    predict = Myel(train, label, test)
-    to_csv(predict, index, "result_myel.csv")
+    classifier = GBC()
+    classifier.fit(train, label)
+    to_csv(classifier.predict(test), index, "result_myel.csv")

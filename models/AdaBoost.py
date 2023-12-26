@@ -29,11 +29,10 @@ class AdaBoost:
         return 0.5 * math.log((1 - error) / error)
 
     def fit(self, data, label, threshold=0.05):
-        weight = np.full(len(data), 1 / len(data), dtype=float)
+        weight = np.ones(len(data)) / len(data)
         for i in range(len(self.trees)):
-            # ? 如何训练一个带权重的基学习器,重采样么
-            tempData, tempLabel = random_sampling(weight, data, label)
-            self.trees[i].fit(tempData, tempLabel, threshold)
+            # tempData, tempLabel = random_sampling(weight, data, label)
+            self.trees[i].fit(data, label, weight, threshold)
             error = self.errorRate(self.trees[i], data, label, weight)
             print(error)
             self.alphas.append(self.alpha(error))
