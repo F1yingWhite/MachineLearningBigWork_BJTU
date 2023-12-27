@@ -25,7 +25,7 @@ class GBC:
         self.myEl = None
 
     def fit(self, data, label):
-        myEl = GradientBoostingClassifier(random_state=10)
+        myEl = GradientBoostingClassifier()
         myEl.fit(data, label)
         param_grid = {
             "n_estimators": [30, 40, 50, 60, 70],
@@ -37,15 +37,8 @@ class GBC:
             estimator=myEl, param_grid=param_grid, scoring="accuracy", cv=3, n_jobs=-1
         )
         grid_search.fit(data, label)
-        # 输出最佳参数和对应的准确度
-        print("Best Parameters: ", grid_search.best_params_)
-        print("Best Accuracy: %.4g" % grid_search.best_score_)
-        # 使用最佳参数的模型在测试集上进行评估
         best_model = grid_search.best_estimator_
-        y_pred = best_model.predict(data)
-        accuracy = metrics.accuracy_score(label, y_pred)
         self.myEl = best_model
-        return accuracy
 
     def predict(self, data):
         predict = self.myEl.predict(data)
