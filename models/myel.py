@@ -22,24 +22,21 @@ def Myel(train, label, test):
 
 class GBC:
     def __init__(self):
-        self.myEl = None
+        self.gbc = None
 
     def fit(self, data, label):
-        myEl = GradientBoostingClassifier()
-        myEl.fit(data, label)
+        gbc = GradientBoostingClassifier()
+        gbc.fit(data, label)
         param_grid = {
-            "n_estimators": [30, 40, 50, 60, 70],
-            "learning_rate": [0.01, 0.1, 0.15, 0.2, 0.25, 0.3],
-            "max_depth": [3, 4, 5, 6, 10],
+            "learning_rate": [0.01, 0.1, 0.15, 0.2],
+            "n_estimators": [30, 40, 50, 60],
+            "max_depth": [3, 4, 5, 6],
         }
-
         grid_search = GridSearchCV(
-            estimator=myEl, param_grid=param_grid, scoring="accuracy", cv=3, n_jobs=-1
+            estimator=gbc, param_grid=param_grid, scoring="accuracy", cv=2
         )
         grid_search.fit(data, label)
-        best_model = grid_search.best_estimator_
-        self.myEl = best_model
+        self.gbc = grid_search.best_estimator_
 
     def predict(self, data):
-        predict = self.myEl.predict(data)
-        return predict
+        return self.gbc.predict(data)
